@@ -4,7 +4,7 @@
 
 OpenAI's "Sign in with ChatGPT" plan usage is open to **open-source and locally hosted apps**; **paid or remotely hosted apps** must apply through the [interest form](https://openai.com/form/sign-in-with-chatgpt-interest/) (limited trial with selected partners). Nibly runs locally in the browser, is free, and has no backend, which fits the open-source path **if the source is public under an open-source license**. To stay on the safe side:
 
-1. Publish this repository publicly (e.g. GitHub) with an open-source license (MIT or Apache-2.0) and link it from the store listing.
+1. Done: the source is public at https://github.com/csavur/nibly under the MIT license. Link it from the store listing (the "Homepage URL" / support fields).
 2. Keep the extension free. If you ever charge for it or add a backend, switch to the commercial path (interest form) first.
 3. If in doubt, ask OpenAI through the interest form before publishing. OpenAI doesn't notify you if they decide an app isn't eligible; users would see `subscription_sharing_user_not_eligible` errors.
 4. The official "Continue with ChatGPT" button includes the ChatGPT logo. OpenAI's docs list the approved formats but do not link the logo files; get the asset from OpenAI (developer docs or contact) and add it to the button in `src/options/options.html`. Until then the button is the approved label on black, without the logo.
