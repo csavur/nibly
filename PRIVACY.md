@@ -37,4 +37,4 @@ Nibly does not sell or transfer user data to third parties (beyond sending your 
 
 ## Contact
 
-Questions: <!-- TODO: add a support email or URL before publishing -->
+Questions or concerns: open an issue at https://github.com/csavur/nibly/issues

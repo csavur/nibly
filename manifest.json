@@ -42,7 +42,7 @@
         "default": "Alt+Shift+F",
         "mac": "MacCtrl+Shift+F"
       },
-      "description": "Fix spelling and grammar in the selected text"
+      "description": "Fix spelling and grammar, and review the changes"
     },
     "rewrite-selection": {
       "suggested_key": {

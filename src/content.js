@@ -17,7 +17,7 @@
    * fresh read before replacing, so both sides use the same serialization (Selection.toString() adds
    * line breaks for <div>/<br> that Range.toString() does not).
    * @type {{jobId: string, actionId: "fix" | "rewrite", target: Target, snapshot: string | null, text: string,
-   *   lead: string, trail: string, planNote: {text: string, link: {text: string, url: string}} | null,
+   *   lead: string, trail: string, planNote: {text: string, link: {text: string, url: string}} | null, review: boolean,
    *   result: string | null} | null}
    */
   let job = null;
@@ -495,7 +495,7 @@
     job.jobId = crypto.randomUUID();
     job.result = null;
     showWorking();
-    chrome.runtime.sendMessage({ type: "nibly:retry", jobId: job.jobId, actionId: job.actionId, text: job.text });
+    chrome.runtime.sendMessage({ type: "nibly:retry", jobId: job.jobId, actionId: job.actionId, text: job.text, review: job.review });
   }
 
   function cancelJob() {
@@ -542,6 +542,7 @@
           lead: text.match(/^\s*/)[0],
           trail: text.match(/\s*$/)[0],
           planNote: safeNote(msg.planNote),
+          review: msg.review === true, // "Fix and review…": keep reviewing on Try again
           result: null,
         };
         showWorking();

@@ -5,10 +5,17 @@ import { CHATGPT, ChatGptAuthError, getAccessToken } from "./chatgpt-auth.js";
 import { complete, listModels, LlmError, TRANSIENT_PLAN_ERRORS } from "./llm.js";
 import { activeConnection, loadSettings, originPattern } from "./settings.js";
 
-/** Context menu entries; ids double as action ids and match chrome.commands names minus "-selection". */
-const ACTIONS = {
-  fix: "Fix spelling and grammar",
-  rewrite: "Rewrite",
+/** What the AI can do with the text. */
+const ACTION_IDS = new Set(["fix", "rewrite"]);
+
+/**
+ * Right-click menu entries, in menu order. Keyboard shortcuts use the same ids plus "-selection"
+ * (see "commands" in manifest.json). Fix always opens the review panel so the user sees every
+ * correction before it goes in; Rewrite replaces directly unless "Review before replacing" is on.
+ */
+const ENTRIES = {
+  fix: { title: "Fix and review…", actionId: "fix", review: true },
+  rewrite: { title: "Rewrite", actionId: "rewrite", review: false },
 };
 const MENU_PARENT = "nibly";
 const MENU_SETTINGS = "nibly:settings";
@@ -20,8 +27,8 @@ const PROGRESS_INTERVAL_MS = 120;
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   await chrome.contextMenus.removeAll();
   chrome.contextMenus.create({ id: MENU_PARENT, title: "Nibly", contexts: ["selection"] });
-  for (const [id, title] of Object.entries(ACTIONS)) {
-    chrome.contextMenus.create({ id, parentId: MENU_PARENT, title, contexts: ["selection"] });
+  for (const [id, entry] of Object.entries(ENTRIES)) {
+    chrome.contextMenus.create({ id, parentId: MENU_PARENT, title: entry.title, contexts: ["selection"] });
   }
   chrome.contextMenus.create({ id: "nibly:sep", parentId: MENU_PARENT, type: "separator", contexts: ["selection"] });
   chrome.contextMenus.create({ id: MENU_SETTINGS, parentId: MENU_PARENT, title: "Settings…", contexts: ["selection"] });
@@ -33,18 +40,16 @@ chrome.action.onClicked.addListener(() => chrome.runtime.openOptionsPage());
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === MENU_SETTINGS) return void chrome.runtime.openOptionsPage();
-  const actionId = String(info.menuItemId);
-  if (!(actionId in ACTIONS) || !tab?.id) return;
-  runAction(actionId, tab.id, info.frameId ?? 0, "menu").catch((err) => console.error("Nibly:", err));
+  if (!tab?.id) return;
+  runEntry(String(info.menuItemId), tab.id, info.frameId ?? 0, "menu");
 });
 
 // Keyboard shortcuts (configurable at chrome://extensions/shortcuts). Like the menu, a shortcut
 // grants activeTab for the current tab. Optional chaining: if the browser doesn't expose the
 // commands API, the rest of the extension must still start.
 chrome.commands?.onCommand.addListener((command, tab) => {
-  const actionId = command.replace(/-selection$/, "");
-  if (!(actionId in ACTIONS) || !tab?.id) return;
-  runAction(actionId, tab.id, 0, "shortcut").catch((err) => console.error("Nibly:", err));
+  if (!tab?.id) return;
+  runEntry(command.replace(/-selection$/, ""), tab.id, 0, "shortcut");
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -54,8 +59,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type.startsWith("nibly:")) {
     if (sender.tab?.id === undefined) return false;
     if (msg.type === "nibly:openSettings") chrome.runtime.openOptionsPage();
-    if (msg.type === "nibly:retry" && msg.actionId in ACTIONS && typeof msg.text === "string") {
-      processJob({ tabId: sender.tab.id, frameId: sender.frameId ?? 0, jobId: msg.jobId, actionId: msg.actionId, text: msg.text });
+    if (msg.type === "nibly:retry" && ACTION_IDS.has(msg.actionId) && typeof msg.text === "string") {
+      processJob({
+        tabId: sender.tab.id,
+        frameId: sender.frameId ?? 0,
+        jobId: msg.jobId,
+        actionId: msg.actionId,
+        text: msg.text,
+        review: msg.review === true,
+      });
     }
     return false;
   }
@@ -69,7 +81,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "test") {
     job = withProvider(msg.settings, (conn) => complete(conn, { system: "Reply with the single word OK.", user: "Ping" }));
   }
-  if (msg.type === "run" && msg.actionId in ACTIONS) job = transform(msg.settings, msg.actionId, String(msg.text ?? ""));
+  if (msg.type === "run" && ACTION_IDS.has(msg.actionId)) job = transform(msg.settings, msg.actionId, String(msg.text ?? ""));
   if (!job) return false;
   job.then(
     (result) => sendResponse({ ok: true, result }),
@@ -82,13 +94,25 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // Fix / Rewrite
 
 /**
+ * Run a menu entry or shortcut.
+ * @param {string} entryId  key of ENTRIES
+ * @param {number} tabId @param {number} frameId @param {"menu" | "shortcut"} via
+ */
+function runEntry(entryId, tabId, frameId, via) {
+  const entry = ENTRIES[entryId];
+  if (!entry) return Promise.resolve();
+  return runAction(entry.actionId, tabId, frameId, via, { review: entry.review }).catch((err) => console.error("Nibly:", err));
+}
+
+/**
  * Inject the page UI, capture the selection, then process it.
  * @param {string} actionId
  * @param {number} tabId
  * @param {number} frameId
  * @param {"menu" | "shortcut"} via
+ * @param {{review?: boolean}} [opts]  review: show the review panel even if auto-replace is on
  */
-async function runAction(actionId, tabId, frameId, via) {
+async function runAction(actionId, tabId, frameId, via, { review = false } = {}) {
   const jobId = crypto.randomUUID();
   try {
     await chrome.scripting.executeScript({ target: { tabId, frameIds: [frameId] }, files: ["src/diff.js", "src/content.js"] });
@@ -101,7 +125,7 @@ async function runAction(actionId, tabId, frameId, via) {
   /** @type {{ok: boolean, text?: string, editable?: boolean}} */
   const captured = await chrome.tabs.sendMessage(
     tabId,
-    { type: "capture", jobId, actionId, planNote: planNote(settings), preview: settings.previewBeforeReplace },
+    { type: "capture", jobId, actionId, review, planNote: planNote(settings) },
     { frameId },
   );
   if (!captured?.ok || !captured.text) {
@@ -113,16 +137,16 @@ async function runAction(actionId, tabId, frameId, via) {
     );
     return;
   }
-  await processJob({ tabId, frameId, jobId, actionId, text: captured.text, settings });
+  await processJob({ tabId, frameId, jobId, actionId, text: captured.text, review, settings });
 }
 
 /**
  * Send the text to the AI, streaming progress to the page, then deliver the result or an error.
  * Also used for "Try again" / "Another version" from the page.
  * @param {{tabId: number, frameId: number, jobId: string, actionId: string, text: string,
- *          settings?: import("./settings.js").Settings}} job
+ *          review?: boolean, settings?: import("./settings.js").Settings}} job
  */
-async function processJob({ tabId, frameId, jobId, actionId, text, settings }) {
+async function processJob({ tabId, frameId, jobId, actionId, text, review = false, settings }) {
   const send = (/** @type {object} */ msg) =>
     chrome.tabs.sendMessage(tabId, { jobId, ...msg }, { frameId }).catch(() => {}); // tab may be gone
   settings ??= await loadSettings();
@@ -137,7 +161,7 @@ async function processJob({ tabId, frameId, jobId, actionId, text, settings }) {
 
   try {
     const result = await withKeepAlive(() => transform(settings, actionId, text, onDelta));
-    await send({ type: "result", actionId, text: result, preview: settings.previewBeforeReplace });
+    await send({ type: "result", actionId, text: result, preview: review || settings.previewBeforeReplace });
   } catch (err) {
     await send({
       type: "error",

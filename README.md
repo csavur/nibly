@@ -8,8 +8,8 @@ A Chrome extension (Manifest V3). Select text anywhere - an email in Gmail or Ou
 - **Or an API key / local model:** OpenAI, Anthropic (Claude), Google Gemini, OpenRouter, Ollama (local), LM Studio (local), and any OpenAI-compatible server (vLLM, llama.cpp server, LocalAI, Groq, Mistral, ...).
 - **Replaces text in place** in text fields and rich editors (Gmail, Outlook web, etc.), with an **Undo** button (or Ctrl+Z / ⌘Z). The confirmation says how many mistakes were fixed, or that none were found.
 - **Live progress:** the reply streams into the panel while the AI writes.
-- **Review mode** (optional, and always for non-editable text): Fix results highlight exactly what changed; buttons for **Try again / Another version**, **Copy** and **Replace** (Enter).
-- **Keyboard shortcuts:** Alt+Shift+F (Fix) and Alt+Shift+R (Rewrite); Ctrl+Shift+F / R on macOS. Changeable at `chrome://extensions/shortcuts`.
+- **Fix and review:** Fix always shows exactly what changed (old words struck through, new words highlighted) before anything goes in; press **Replace** (Enter), **Copy**, or **Try again**. Rewrite replaces directly, or shows the same panel if *Review rewrites before replacing* is on. Non-editable text always opens the panel.
+- **Keyboard shortcuts:** Alt+Shift+F (Fix and review) and Alt+Shift+R (Rewrite); Ctrl+Shift+F / R on macOS. Changeable at `chrome://extensions/shortcuts`.
 - **Helpful errors:** every error offers the next step - *Open settings* for setup problems, *Try again* for temporary ones, *Manage usage* for ChatGPT plan limits.
 - **Guided settings page:** pick *ChatGPT plan*, *API key* or *Local model*; **Connect** grants access, loads the model list, picks a model and tests the connection in one click; a **Try it here** box to test Fix and Rewrite without leaving the page; a status pill shows whether Nibly is ready. Changes save automatically.
 - Editable **Fix** and **Rewrite** instructions (under *Customize instructions*).
@@ -84,7 +84,8 @@ npm test
 See [store/PUBLISHING.md](store/PUBLISHING.md) for the step-by-step, the listing text and the permission justifications. The privacy policy is in [PRIVACY.md](PRIVACY.md).
 
 ```sh
-npm run package   # -> dist/nibly-<version>.zip, upload this
+npm run package        # -> dist/nibly-<version>.zip, upload this
+npm run store-images   # -> store/images/: 5 screenshots (1280x800) + promo tile (440x280)
 ```
 
 Bump `version` in `manifest.json` for every upload.

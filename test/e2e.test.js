@@ -135,7 +135,7 @@ before(async () => {
   );
   fs.appendFileSync(path.join(extDir, "src/background.js"), [
       'import * as __settings from "./settings.js";',
-      "globalThis.__runAction = runAction;",
+      "globalThis.__runEntry = runEntry;",
       "globalThis.__settings = __settings;",
     ].join("\n"));
 
@@ -173,11 +173,26 @@ async function configure(extra = {}) {
   );
 }
 
-async function run(action) {
-  await worker.evaluate(async (action) => {
+/** Run a right-click menu entry ("fix" = Fix and review…, "rewrite") on the current selection. */
+async function run(entryId) {
+  await worker.evaluate(async (entryId) => {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    await globalThis.__runAction(action, tab.id, 0, "");
-  }, action);
+    await globalThis.__runEntry(entryId, tab.id, 0, "menu");
+  }, entryId);
+}
+
+/** In the review panel, Replace has focus: press Enter and wait for the text to change. */
+async function replaceWithEnter(selector, expected) {
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(
+    (selector, expected) => {
+      const el = document.querySelector(selector);
+      return (el.value ?? el.innerText) === expected || (expected === null && !document.querySelector("nibly-ui")?.shadowRoot.querySelector(".review"));
+    },
+    { timeout: 3000 },
+    selector,
+    expected,
+  );
 }
 
 const uiShown = () => page.evaluate(() => !!document.querySelector("nibly-ui"));
@@ -211,7 +226,7 @@ const selectIn = (value, start, end) =>
     end,
   );
 
-test("Fix replaces the selected text in a textarea, keeping surrounding whitespace", async () => {
+test("Fix shows the changes first, then Replace fixes the textarea keeping surrounding whitespace", async () => {
   await configure();
   await page.evaluate(() => {
     const ta = document.getElementById("ta");
@@ -222,7 +237,10 @@ test("Fix replaces the selected text in a textarea, keeping surrounding whitespa
     ta.setSelectionRange(start, end);
   });
   await run("fix");
-  assert.equal(await page.$eval("#ta", (el) => el.value), "Hello,  the meeting is tomorrow. Thanks");
+  assert.equal(await page.$eval("#ta", (el) => el.value), "Hello,  teh meeting is tommorow. Thanks", "nothing replaced before review");
+  assert.match((await card()).title, /Review fix\s*2 changes/);
+  await replaceWithEnter("#ta", "Hello,  the meeting is tomorrow. Thanks");
+  await page.keyboard.press("Escape");
   const req = requests.at(-1);
   assert.equal(req.model, "test-model");
   assert.equal(req.messages[1].content, "<text>\nteh meeting is tommorow.\n</text>");
@@ -264,6 +282,7 @@ test("Multi-line selection in a Gmail-style editor is replaced in place, keeping
   });
   await run("fix");
   assert.equal(requests.at(-1).messages[1].content, "<text>\nHi Sam,\n\nteh report is ready.\n</text>");
+  await replaceWithEnter("#gmail", null);
   const after = await page.$eval("#gmail", (el) => ({ text: el.innerText, html: el.innerHTML }));
   // Same line structure as before, with only the fix applied.
   assert.equal(after.text, before.text.replace("teh", "the"));
@@ -289,7 +308,7 @@ test("Non-editable selection shows a result panel and leaves the page untouched"
   assert.equal(await uiShown(), false);
 });
 
-test("Preview mode waits for Replace, which sits next to Copy", async () => {
+test('"Review rewrites before replacing" makes Rewrite wait for Replace, which sits next to Copy', async () => {
   await configure({ previewBeforeReplace: true });
   await page.evaluate(() => {
     const ta = document.getElementById("ta");
@@ -297,7 +316,7 @@ test("Preview mode waits for Replace, which sits next to Copy", async () => {
     ta.focus();
     ta.setSelectionRange(0, 3);
   });
-  await run("fix");
+  await run("rewrite");
   assert.equal(await page.$eval("#ta", (el) => el.value), "teh end");
   assert.equal(await uiShown(), true);
   // Replace sits next to Copy and has focus: Enter applies the result.
@@ -328,10 +347,10 @@ test("Provider errors are shown and the text is left alone", async () => {
   }
 });
 
-test("After an automatic fix, the confirmation shows the number of changes and Undo restores the text", async () => {
+test("After Replace, the confirmation shows the number of changes and Undo restores the text", async () => {
   await selectIn("teh cat and teh dog", 0, 19);
   await run("fix");
-  assert.equal(await page.$eval("#ta", (el) => el.value), "the cat and the dog");
+  await replaceWithEnter("#ta", "the cat and the dog");
   const c = await card();
   assert.match(c.title, /Fixed\s*2 changes/);
   assert.deepEqual(c.buttons, ["Undo"]);
@@ -350,8 +369,7 @@ test("When Fix finds nothing to change, the text is left alone and the user is t
 });
 
 test("Review panel highlights changes and Try again asks the AI again", async () => {
-  await configure({ previewBeforeReplace: true });
-  try {
+  {
     await selectIn("teh end", 0, 7);
     await run("fix");
     const c = await card();
@@ -367,9 +385,27 @@ test("Review panel highlights changes and Try again asks the AI again", async ()
     await page.waitForFunction(() => document.querySelector("nibly-ui")?.shadowRoot.querySelector(".review"), { timeout: 5000 });
     assert.equal(requests.length, before + 1);
     await page.keyboard.press("Escape");
-  } finally {
-    await configure({ previewBeforeReplace: false });
   }
+});
+
+test("Fix always reviews, even when rewrites replace directly, and Try again keeps reviewing", async () => {
+  await configure({ previewBeforeReplace: false });
+  await selectIn("teh end", 0, 7);
+  await run("fix");
+  assert.equal(await page.$eval("#ta", (el) => el.value), "teh end", "nothing replaced before review");
+  let c = await card();
+  assert.match(c.title, /Review fix\s*1 change/);
+  assert.deepEqual(c.buttons, ["Try again", "Copy", "Replace"]);
+
+  await clickCardButton("Try again");
+  await page.waitForFunction(() => document.querySelector("nibly-ui")?.shadowRoot.querySelector(".review"), { timeout: 5000 });
+  assert.equal(await page.$eval("#ta", (el) => el.value), "teh end", "Try again stays in review mode");
+
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => document.getElementById("ta").value === "the end", { timeout: 3000 });
+  c = await card();
+  assert.deepEqual(c.buttons, ["Undo"]);
+  await page.keyboard.press("Escape");
 });
 
 test("Settings: connect an API provider, then try Fix in the settings page", async () => {
@@ -451,7 +487,8 @@ test("Sign in with ChatGPT in the settings page, then Fix bills the ChatGPT plan
     ta.setSelectionRange(0, 3);
   });
   await run("fix");
-  assert.equal(await page.$eval("#ta", (el) => el.value), "the plan works");
+  await replaceWithEnter("#ta", "the plan works");
+  await page.keyboard.press("Escape");
   const call = responsesCalls.at(-1);
   assert.equal(call.auth, "Bearer e2e-access");
   assert.equal(call.body.model, "gpt-e2e");
