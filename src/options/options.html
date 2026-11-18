@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nibly settings</title>
+    <link rel="icon" href="../../icons/icon-32.png" />
+    <link rel="stylesheet" href="options.css" />
+    <script src="../diff.js"></script>
+    <script type="module" src="options.js"></script>
+  </head>
+  <body>
+    <div class="app">
+      <header class="top">
+        <div class="brand">
+          <img src="../../icons/icon-128.png" alt="" width="44" height="44" />
+          <div>
+            <h1>Nibly</h1>
+            <p>Fix and rewrite text anywhere on the web.</p>
+          </div>
+        </div>
+        <span id="statusPill" class="pill" role="status"><span class="dot"></span><span class="pill-text">Checking…</span></span>
+      </header>
+
+      <!-- 1. Connect -->
+      <section class="card" aria-labelledby="connectTitle">
+        <div class="card-head">
+          <span class="step">1</span>
+          <div>
+            <h2 id="connectTitle">Connect your AI</h2>
+            <p class="sub">Choose how Nibly gets its AI. You can change this any time.</p>
+          </div>
+        </div>
+
+        <div class="seg" role="radiogroup" aria-label="Connection type">
+          <button type="button" role="radio" class="seg-opt" data-group="plan" aria-checked="false">
+            <span class="seg-title">ChatGPT plan <span class="badge">Easiest</span></span>
+            <span class="seg-desc">Use your Go, Plus, Pro or Business subscription</span>
+          </button>
+          <button type="button" role="radio" class="seg-opt" data-group="api" aria-checked="false">
+            <span class="seg-title">API key</span>
+            <span class="seg-desc">OpenAI, Claude, Gemini, OpenRouter and more</span>
+          </button>
+          <button type="button" role="radio" class="seg-opt" data-group="local" aria-checked="false">
+            <span class="seg-title">Local model</span>
+            <span class="seg-desc">Ollama or LM Studio - private, works offline</span>
+          </button>
+        </div>
+
+        <!-- ChatGPT plan -->
+        <div class="panel" id="planPanel" hidden>
+          <div id="planSignedOut" class="signin">
+            <p>
+              Sign in with your ChatGPT account. Nibly uses your plan's included usage - no API key, nothing extra
+              to pay. Nibly itself is free.
+            </p>
+            <div class="row">
+              <button type="button" id="chatgptSignIn" class="btn siwc" data-oai-siwc-button>Continue with ChatGPT</button>
+              <button type="button" id="chatgptCancel" class="btn ghost" hidden>Cancel</button>
+            </div>
+          </div>
+          <div id="planSignedIn" class="account" hidden>
+            <span class="avatar" id="chatgptAvatar" aria-hidden="true"></span>
+            <div class="account-main">
+              <div class="account-name" id="chatgptAccount"></div>
+              <div class="muted small">Using ChatGPT plan · <a href="https://chatgpt.com/settings/usage" target="_blank" rel="noopener">Manage usage</a></div>
+            </div>
+            <button type="button" id="chatgptSignOut" class="btn ghost">Sign out</button>
+          </div>
+        </div>
+
+        <!-- API key / Local -->
+        <div class="panel" id="keyedPanel" hidden>
+          <div class="field">
+            <label for="provider">Provider</label>
+            <select id="provider"></select>
+          </div>
+
+          <div class="field" id="apiKeyField">
+            <div class="label-row">
+              <label for="apiKey">API key <span class="optional" id="apiKeyOptional">optional</span></label>
+              <a id="keyLink" class="small" target="_blank" rel="noopener">Get an API key ↗</a>
+            </div>
+            <div class="input-group">
+              <input id="apiKey" type="password" spellcheck="false" autocomplete="off" placeholder="Paste your key" />
+              <button type="button" id="toggleKey" class="btn ghost input-btn" aria-label="Show key">Show</button>
+            </div>
+            <p class="hint">Stored only in this browser. Sent only to the provider you choose.</p>
+          </div>
+
+          <div class="field" id="baseUrlField">
+            <label for="baseUrl">Server address</label>
+            <input id="baseUrl" type="url" spellcheck="false" autocomplete="off" />
+            <p class="hint">The address that ends right before <code>/chat/completions</code>.</p>
+          </div>
+
+          <div id="providerNote" class="callout" hidden></div>
+
+          <details id="advanced" class="advanced">
+            <summary>Advanced</summary>
+            <div class="field">
+              <label for="baseUrlAdv">API address</label>
+              <input id="baseUrlAdv" type="url" spellcheck="false" autocomplete="off" />
+              <p class="hint">Only change this to use a proxy or a compatible endpoint.</p>
+            </div>
+          </details>
+        </div>
+
+        <!-- Model (all connection types) -->
+        <div class="field" id="modelField" hidden>
+          <div class="label-row">
+            <label for="modelSelect" id="modelLabel">Model</label>
+            <button type="button" id="modelManual" class="link small">Enter a model ID</button>
+          </div>
+          <div class="input-group">
+            <select id="modelSelect"></select>
+            <input id="modelInput" spellcheck="false" autocomplete="off" placeholder="Model ID, e.g. gpt-5-mini" hidden />
+            <button type="button" id="refreshModels" class="btn ghost input-btn" title="Reload the model list" aria-label="Reload the model list">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.6-3.7M13 2.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="card-foot" id="connectFoot">
+          <p id="connectStatus" class="status" role="status"></p>
+          <button type="button" id="connect" class="btn primary">Connect</button>
+        </div>
+      </section>
+
+      <!-- 2. Use it -->
+      <section class="card" aria-labelledby="tryTitle">
+        <div class="card-head">
+          <span class="step">2</span>
+          <div>
+            <h2 id="tryTitle">Use it anywhere</h2>
+            <p class="sub">Select text on any page, right-click, and choose <b>Nibly</b>.</p>
+          </div>
+        </div>
+
+        <div class="howto">
+          <div class="menu-mock" aria-hidden="true">
+            <div class="mm-item mm-dim">Copy</div>
+            <div class="mm-item mm-dim">Search for “teh report”</div>
+            <div class="mm-sep"></div>
+            <div class="mm-item mm-active">
+              <img src="../../icons/icon-16.png" alt="" width="16" height="16" /> Nibly <span class="mm-arrow">›</span>
+              <div class="mm-sub">
+                <div class="mm-item mm-hl">Fix spelling and grammar</div>
+                <div class="mm-item">Rewrite</div>
+                <div class="mm-sep"></div>
+                <div class="mm-item">Settings…</div>
+              </div>
+            </div>
+          </div>
+          <div class="shortcuts">
+            <h3>Keyboard shortcuts</h3>
+            <dl>
+              <div><dt>Fix</dt><dd id="kbdFix"></dd></div>
+              <div><dt>Rewrite</dt><dd id="kbdRewrite"></dd></div>
+            </dl>
+            <button type="button" id="editShortcuts" class="link small">Change shortcuts</button>
+          </div>
+        </div>
+
+        <div class="try">
+          <label for="tryText" class="try-label">Try it here</label>
+          <textarea id="tryText" rows="3" spellcheck="false">hi Sam, i wanted to let you know that teh report are ready. let me know if you has any question's</textarea>
+          <div class="row">
+            <button type="button" id="tryFix" class="btn">Fix</button>
+            <button type="button" id="tryRewrite" class="btn">Rewrite</button>
+            <span id="tryStatus" class="status" role="status"></span>
+          </div>
+          <div id="tryResult" class="try-result" hidden>
+            <div class="try-result-head">
+              <span id="tryResultTitle"></span>
+              <span id="tryChip" class="chip" hidden></span>
+            </div>
+            <div id="tryOutput" class="output" tabindex="0"></div>
+            <div class="row end">
+              <button type="button" id="tryCopy" class="btn">Copy</button>
+              <button type="button" id="tryUse" class="btn primary">Replace</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Preferences -->
+      <section class="card" aria-labelledby="prefsTitle">
+        <div class="card-head plain">
+          <h2 id="prefsTitle">Preferences</h2>
+        </div>
+
+        <label class="switch-row">
+          <span>
+            <span class="switch-title">Review before replacing</span>
+            <span class="hint">Show the result with Copy and Replace buttons first, instead of replacing your text right away. Replacements can always be undone.</span>
+          </span>
+          <input id="preview" type="checkbox" role="switch" class="switch" />
+        </label>
+
+        <details class="advanced instructions">
+          <summary>Customize instructions</summary>
+          <p class="hint">Tell the AI how you like your text - for example "Use British spelling" or "Keep it short and friendly".</p>
+          <div class="field">
+            <div class="label-row">
+              <label for="promptFix">Fix</label>
+              <button type="button" class="link small" data-reset="fix">Reset to default</button>
+            </div>
+            <textarea id="promptFix" rows="5"></textarea>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="promptRewrite">Rewrite</label>
+              <button type="button" class="link small" data-reset="rewrite">Reset to default</button>
+            </div>
+            <textarea id="promptRewrite" rows="5"></textarea>
+          </div>
+        </details>
+      </section>
+
+      <footer class="foot">
+        <p>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 2.5 3.8v3.7c0 3.3 2.3 6 5.5 7 3.2-1 5.5-3.7 5.5-7V3.8z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" /></svg>
+          Private by design: your text goes only to the AI you choose, only when you ask. No tracking.
+        </p>
+        <p class="muted small" id="version"></p>
+      </footer>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <dialog id="welcome" aria-labelledby="welcomeTitle">
+      <h2 id="welcomeTitle">You're using your ChatGPT plan</h2>
+      <p>
+        Fix and Rewrite requests from Nibly now use your ChatGPT plan. You can see this usage, set limits, or disconnect
+        Nibly at any time in ChatGPT settings.
+      </p>
+      <div class="row end">
+        <a class="btn ghost" href="https://chatgpt.com/settings/usage" target="_blank" rel="noopener">Manage usage</a>
+        <button type="button" id="welcomeOk" class="btn primary" autofocus>Got it</button>
+      </div>
+    </dialog>
+  </body>
+</html>

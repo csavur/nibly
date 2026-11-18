@@ -1,0 +1,118 @@
+# Publishing to the Chrome Web Store
+
+## Before you start: ChatGPT plan eligibility
+
+OpenAI's "Sign in with ChatGPT" plan usage is open to **open-source and locally hosted apps**; **paid or remotely hosted apps** must apply through the [interest form](https://openai.com/form/sign-in-with-chatgpt-interest/) (limited trial with selected partners). Nibly runs locally in the browser, is free, and has no backend, which fits the open-source path **if the source is public under an open-source license**. To stay on the safe side:
+
+1. Publish this repository publicly (e.g. GitHub) with an open-source license (MIT or Apache-2.0) and link it from the store listing.
+2. Keep the extension free. If you ever charge for it or add a backend, switch to the commercial path (interest form) first.
+3. If in doubt, ask OpenAI through the interest form before publishing. OpenAI doesn't notify you if they decide an app isn't eligible; users would see `subscription_sharing_user_not_eligible` errors.
+4. The official "Continue with ChatGPT" button includes the ChatGPT logo. OpenAI's docs list the approved formats but do not link the logo files; get the asset from OpenAI (developer docs or contact) and add it to the button in `src/options/options.html`. Until then the button is the approved label on black, without the logo.
+
+## Your developer account
+
+You registered with a personal Google account. That works, but note:
+
+- The listing shows a publisher name and a **contact email** that users can see. Set a dedicated public email (for example a support alias) in the dashboard's Account page instead of your personal address, and use the same one in `PRIVACY.md`.
+- If you declare yourself a **trader** (EU DSA), your address and phone number are published. As a free, non-commercial hobby project you can usually declare non-trader; if it's for a company, publish as the company.
+- If this may become a company product, consider moving it under a **group publisher** (a Google Group your company owns) early, so ownership isn't tied to one person. Transferring items later is possible but goes through support.
+- 2-Step Verification is required on the account.
+
+## One-time setup
+
+1. Sign in at the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole) with the Google account that will own the listing (a company account is better than a personal one).
+2. Pay the one-time **$5 registration fee** and verify the contact email.
+3. Decide **trader vs non-trader** status (EU Digital Services Act). If you publish as a business, you must provide business address and contact details, which are shown publicly.
+4. Host the privacy policy at a public URL (GitHub Pages, your website, a public Gist of `PRIVACY.md`). Fill in the contact line in `PRIVACY.md` first.
+
+## Each release
+
+1. Bump `version` in `manifest.json`.
+2. `npm test && npm run package`
+3. Dashboard → **New item** (first time) or the item → **Package → Upload new package** → upload `dist/nibly-<version>.zip`.
+4. Fill in or review the tabs below, then **Submit for review**. Reviews typically take from a few hours to a few days; the first submission is usually the slowest.
+
+## Store listing tab
+
+**Name:** Nibly - AI Fix & Rewrite
+(Checked 2026-11-18: no extension named "Nibly" in the Chrome Web Store. Still search USPTO / EUIPO trademarks and the web before submitting. Do not put "ChatGPT", "OpenAI", "Claude" or "Gemini" in the name or icon.)
+
+**Summary (max 132 chars):**
+Fix grammar or rewrite selected text with right-click. Use your ChatGPT plan, an API key (Claude, Gemini...) or a local model.
+
+**Category:** Productivity → Tools (or Workflow & Planning)
+
+**Description:**
+
+```
+Write better emails and messages without leaving the page.
+
+Select text anywhere - in Gmail, Outlook, a form, any text box - right-click, and choose:
+• Fix spelling and grammar - corrects mistakes, keeps your wording and tone
+• Rewrite - makes it clearer, more concise and more professional
+
+The result replaces your selection in place, with one-click Undo. Prefer to check first? Turn on review mode to see exactly what changed before replacing. Keyboard shortcuts: Alt+Shift+F to fix, Alt+Shift+R to rewrite.
+
+BRING YOUR OWN AI
+• Your ChatGPT plan (Go, Plus, Pro, Business) - just sign in, no API key
+• API keys: OpenAI, Anthropic Claude, Google Gemini, OpenRouter
+• Local and private: Ollama, LM Studio - your text never leaves your computer
+• Any OpenAI-compatible server
+
+PRIVATE BY DESIGN
+• No account, no tracking, no analytics, no servers of ours
+• Your API key or ChatGPT sign-in stays in your browser
+• Text is sent only to the provider you choose, only when you click Fix or Rewrite
+• Network access is requested only for the provider you configure
+
+CUSTOMIZABLE
+• Edit the Fix and Rewrite instructions
+• Optional preview before replacing
+• Pick any model your provider offers
+```
+
+**Graphics (required):**
+- Icon 128×128: `icons/icon-128.png`
+- At least 1 screenshot, 1280×800 (or 640×400). Suggested: (1) the right-click menu over a Gmail draft, (2) the "Fixed" toast after replacement, (3) the settings page with Ollama selected.
+- Small promo tile 440×280 (optional but improves placement).
+
+## Privacy practices tab
+
+**Single purpose:**
+Fix or rewrite text the user selects, using an AI provider the user configures.
+
+**Permission justifications:**
+
+| Permission | Justification |
+| --- | --- |
+| `contextMenus` | Adds "Fix" and "Rewrite" entries to the right-click menu shown when text is selected. This is the extension's only entry point. |
+| `activeTab` | When the user clicks a Nibly menu entry, gives temporary access to that tab so the extension can read the selected text and replace it with the result. No access to any tab without that click. |
+| `scripting` | Injects the small script that reads the selection, shows progress, and inserts the result into the tab the user invoked the extension on (together with activeTab). |
+| `storage` | Saves the user's settings (provider, model, API key, custom instructions) locally. |
+| Optional host permissions (`https://*/*`, `http://*/*`) | Users choose their own AI provider, including self-hosted and local servers (e.g. `http://localhost:11434` for Ollama) whose address cannot be known in advance. Access is requested at runtime only for the single origin the user enters, when they save settings. For "Continue with ChatGPT", access is requested for `auth.openai.com` (sign-in), `api.openai.com` (requests) and `127.0.0.1` (OpenAI's sign-in redirect target, read to complete sign-in). Nothing is granted at install. |
+
+**Remote code:** No, I am not using remote code. (All JavaScript is in the package. Network calls only send text to the user's AI API and receive text back.)
+
+**Data usage - check:**
+- **Personally identifiable information / Personal communications / Website content:** The selected text may contain these. Check "Personal communications" and "Website content" to be safe.
+- **Authentication information:** Yes - the user's API key or ChatGPT sign-in tokens, stored locally.
+- **Personally identifiable information:** Yes if ChatGPT sign-in is used - the account email and name are stored locally to show which account is connected.
+
+**Certify:**
+- I do not sell or transfer user data to third parties, outside of the approved use cases (sending the selection to the AI provider the user configured is the extension's single purpose and is user-initiated).
+- I do not use or transfer user data for purposes unrelated to my item's single purpose.
+- I do not use or transfer user data to determine creditworthiness or for lending purposes.
+
+**Privacy policy URL:** the public URL of `PRIVACY.md`.
+
+## Distribution tab
+
+- Visibility: start with **Unlisted** (installable via link, not searchable) to try the store build with a few people, then switch to **Public**.
+- Regions: all.
+
+## Common rejection reasons to avoid
+
+- Permission not justified or broader than needed - this build requests no host access at install.
+- Missing or vague privacy policy, or data-use disclosures that don't match the policy.
+- Description keyword stuffing, or other companies' brand names in the title/icon.
+- Code obfuscation - this build is plain, readable JavaScript with no minification, which reviewers can read directly.

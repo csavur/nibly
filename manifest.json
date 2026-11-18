@@ -1,0 +1,55 @@
+{
+  "manifest_version": 3,
+  "name": "Nibly - AI Fix & Rewrite",
+  "short_name": "Nibly",
+  "version": "1.0.0",
+  "description": "Select text, right-click, and fix or rewrite it with the AI provider of your choice - cloud or local.",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "Nibly settings",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": true
+  },
+  "permissions": [
+    "contextMenus",
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "commands": {
+    "fix-selection": {
+      "suggested_key": {
+        "default": "Alt+Shift+F",
+        "mac": "MacCtrl+Shift+F"
+      },
+      "description": "Fix spelling and grammar in the selected text"
+    },
+    "rewrite-selection": {
+      "suggested_key": {
+        "default": "Alt+Shift+R",
+        "mac": "MacCtrl+Shift+R"
+      },
+      "description": "Rewrite the selected text"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "nibly",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Chrome extension: fix or rewrite selected text with a cloud or local AI provider.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\"",
+    "icons": "python3 scripts/make_icons.py",
+    "package": "sh scripts/package.sh"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.43.1"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/csavur/nibly"
+  }
+}
