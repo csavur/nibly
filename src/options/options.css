@@ -283,6 +283,12 @@ del { background: var(--del-bg); color: var(--del-fg); text-decoration: line-thr
 .foot { text-align: center; margin-top: 28px; color: var(--muted); font-size: 13.5px; }
 .foot p { margin: 0 0 4px; }
 .foot svg { width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px; }
+.foot .coffee { margin: 18px 0 14px; }
+.foot .coffee p { margin: 0 0 10px; }
+.foot .bmc { display: inline-block; border-radius: 10px; transition: transform 0.12s, box-shadow 0.12s; }
+.foot .bmc img { display: block; }
+.foot .bmc:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12); }
+.foot .bmc:focus-visible { outline: none; box-shadow: var(--focus); }
 
 /* Toast */
 .toast {

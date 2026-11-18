@@ -1,5 +1,7 @@
 # Nibly - AI Fix & Rewrite
 
+<a href="https://buymeacoffee.com/csavur"><img src="src/options/bmc-button.svg" alt="Buy me a coffee" height="40"></a>
+
 A Chrome extension (Manifest V3). Select text anywhere - an email in Gmail or Outlook, a form field, any web page - right-click, and choose **Nibly → Fix spelling and grammar** or **Nibly → Rewrite**. You pick the AI provider: a cloud API or a model running on your own machine.
 
 ## Features
@@ -89,6 +91,12 @@ npm run store-images   # -> store/images/: 5 screenshots (1280x800) + promo tile
 ```
 
 Bump `version` in `manifest.json` for every upload.
+
+## Support
+
+Email hellonibly@gmail.com or [open an issue](https://github.com/csavur/nibly/issues).
+
+Nibly is free and has no ads or tracking. If it saves you time, you can [buy me a coffee](https://buymeacoffee.com/csavur) ☕
 
 ## License
 
