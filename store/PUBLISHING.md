@@ -13,7 +13,7 @@ OpenAI's "Sign in with ChatGPT" plan usage is open to **open-source and locally 
 
 You registered with a personal Google account. That works, but note:
 
-- The listing shows a publisher name and a **contact email** that users can see. Use **hellonibly@gmail.com** (Account page in the dashboard, then verify it), not your personal address. It is also the contact in `PRIVACY.md`.
+- The listing shows a publisher name and a **contact email** that users can see. Use **hellonibly@gmail.com** (Settings page in the dashboard, then verify it - publishing is blocked until it is verified), not your personal address. It is also the contact in `PRIVACY.md`.
 - If you declare yourself a **trader** (EU DSA), your address and phone number are published. As a free, non-commercial hobby project you can usually declare non-trader; if it's for a company, publish as the company.
 - If this may become a company product, consider moving it under a **group publisher** (a Google Group your company owns) early, so ownership isn't tied to one person. Transferring items later is possible but goes through support.
 - 2-Step Verification is required on the account.
@@ -51,7 +51,7 @@ Select text anywhere - in Gmail, Outlook, a form, any text box - right-click, an
 • Fix and review - corrects mistakes and shows you every change before it goes in
 • Rewrite - makes it clearer, more concise and more professional
 
-Press Enter and the result replaces your selection in place, with one-click Undo. Keyboard shortcuts: Alt+Shift+F to fix, Alt+Shift+R to rewrite.
+Press Enter and the result replaces your selection in place, with one-click Undo. Keyboard shortcuts: Alt+Shift+F to fix, Alt+Shift+R to rewrite (Ctrl+Shift+F / Ctrl+Shift+R on Mac).
 
 BRING YOUR OWN AI
 • Your ChatGPT plan (Go, Plus, Pro, Business) - just sign in, no API key
@@ -91,11 +91,11 @@ Fix or rewrite text the user selects, using an AI provider the user configures.
 
 | Permission | Justification |
 | --- | --- |
-| `contextMenus` | Adds "Fix" and "Rewrite" entries to the right-click menu shown when text is selected. This is the extension's only entry point. |
+| `contextMenus` | Adds "Fix and review" and "Rewrite" entries to the right-click menu shown when text is selected. This is the extension's only entry point. |
 | `activeTab` | When the user clicks a Nibly menu entry, gives temporary access to that tab so the extension can read the selected text and replace it with the result. No access to any tab without that click. |
 | `scripting` | Injects the small script that reads the selection, shows progress, and inserts the result into the tab the user invoked the extension on (together with activeTab). |
 | `storage` | Saves the user's settings (provider, model, API key, custom instructions) locally. |
-| Optional host permissions (`https://*/*`, `http://*/*`) | Users choose their own AI provider, including self-hosted and local servers (e.g. `http://localhost:11434` for Ollama) whose address cannot be known in advance. Access is requested at runtime only for the single origin the user enters, when they save settings. For "Continue with ChatGPT", access is requested for `auth.openai.com` (sign-in), `api.openai.com` (requests) and `127.0.0.1` (OpenAI's sign-in redirect target, read to complete sign-in). Nothing is granted at install. |
+| Optional host permissions (`https://*/*`, `http://*/*`) | Users choose their own AI provider, including self-hosted and local servers (e.g. `http://localhost:11434` for Ollama) whose address cannot be known in advance. Access is requested at runtime only for the single origin the user enters, when they click Connect in the settings page. For "Continue with ChatGPT", access is requested for `auth.openai.com` (sign-in), `api.openai.com` (requests) and `127.0.0.1` (OpenAI's sign-in redirect target, read to complete sign-in). Nothing is granted at install. |
 
 **Remote code:** No, I am not using remote code. (All JavaScript is in the package. Network calls only send text to the user's AI API and receive text back.)
 
